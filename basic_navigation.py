@@ -9,19 +9,20 @@ from irobot_edu_sdk.music import Note
 import math
 
 robot = Create3(Bluetooth())
-speed = 2
-th = 150
+speed = 5
+th = 250
 
 # Continuously print position of robot (x, y, heading)
 @event(robot.when_play)
 async def play(robot):
     while True:
         await print_pos(robot)
+
 # Move robot
 @event(robot.when_play)
 async def play(robot):
     await robot.reset_navigation()
-    await move_to(robot, 500, 500) # cm x 10
+    await move_to(robot, 0, 900) # coordinates in mm
 
 # Return value with two decimal places
 def f(value):
@@ -35,7 +36,7 @@ async def print_pos(robot):
 # Check if robot has reached its destination - correct to 1.5cm
 async def reachedDestination(robot, new_x, new_y):
     pos = await robot.get_position()
-    if (abs(new_x - pos.x) < 15 and abs(new_y - pos.y) < 15): # threshold value to determine if robot is within 1.5 cm of its destination
+    if (abs(new_x - pos.x) < 25 and abs(new_y - pos.y) < 25): # threshold value to determine if robot is within 1.5 cm of its destination
         return True
     else:
         return False
@@ -47,7 +48,13 @@ async def get_delta_angle(robot, new_x, new_y):
     # Calculate angle of vector pointing to destination - relative to 0 degrees
     delta_x = new_x - pos.x
     delta_y = new_y - pos.y
-    new_angle = math.degrees(math.atan(abs(delta_y)/abs(delta_x)))
+
+    if delta_x == 0 and delta_y >= 0:
+        new_angle = 90
+    elif delta_x == 0 and delta_y < 0:
+        new_angle = 270
+    else:
+        new_angle = math.degrees(math.atan(abs(delta_y)/abs(delta_x)))
 
     # Trig Rules
     if delta_x < 0 and delta_y > 0:
@@ -64,12 +71,10 @@ async def get_delta_angle(robot, new_x, new_y):
     if delta_angle < 0:
         delta_angle = 360 + delta_angle
 
-    print(delta_angle)
     return delta_angle
 
 # Navigate to specified position
 async def move_to(robot, new_x, new_y):
-    # await print_pos(robot)
     delta_angle = await get_delta_angle(robot, new_x, new_y)
 
     # Turn right or left depending on the angle
@@ -92,23 +97,33 @@ async def move_to(robot, new_x, new_y):
 
         # Change direction if there is a front obstacle
         sensors = (await robot.get_ir_proximity()).sensors
-        if front_obstacle(sensors):
-            print("front obstacle")
-            await backoff(robot)
+        if obstacle(sensors):
+            print("obstacle")
+            await boundary_follow(robot)
             await move_to(robot, new_x, new_y)
             break
 
     await print_pos(robot)
 
-# Check if there is an obstacle in front of the robot
-def front_obstacle(sensors):
-    return sensors[3] > th
+# Check for obstacles
+def obstacle(sensors):
+    return not all(sensor_val < th for sensor_val in sensors)
 
-# Backoff from a front obstacle - move back and change angle
-async def backoff(robot):
-    await robot.set_lights_rgb(255, 80, 0)
-    await robot.move(-20)
-    await robot.turn_left(45)
-    await robot.move(50)
+# Follow obstacle boundary
+async def boundary_follow(robot):
+    finishedTurning = False
+    while not finishedTurning:
+        await robot.turn_right(5)
+        sensors = (await robot.get_ir_proximity()).sensors
+        print("turning:", sensors)
+        if (sensors[1] < 50 and sensors[0] > 100):
+            finishedTurning = True
+            await robot.turn_right(5)
+    await robot.set_wheel_speeds(speed,speed)
+    while True:
+        sensors = (await robot.get_ir_proximity()).sensors
+        if (sensors[0] < 50):
+            await robot.move(20)
+            return
 
 robot.play()
