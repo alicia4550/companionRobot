@@ -1,0 +1,24 @@
+[2.909s] Invoking command in '/home/trana41/irobot_ws/src/nav_pkg': PYTHONPATH=/home/trana41/irobot_ws/build/nav_pkg/prefix_override:/home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/nav_pkg build --build-base /home/trana41/irobot_ws/build/nav_pkg/build install --record /home/trana41/irobot_ws/build/nav_pkg/install.log --single-version-externally-managed
+[4.163s] running egg_info
+[4.165s] writing ../../build/nav_pkg/nav_pkg.egg-info/PKG-INFO
+[4.166s] writing dependency_links to ../../build/nav_pkg/nav_pkg.egg-info/dependency_links.txt
+[4.215s] writing entry points to ../../build/nav_pkg/nav_pkg.egg-info/entry_points.txt
+[4.215s] writing requirements to ../../build/nav_pkg/nav_pkg.egg-info/requires.txt
+[4.216s] writing top-level names to ../../build/nav_pkg/nav_pkg.egg-info/top_level.txt
+[4.216s] reading manifest file '../../build/nav_pkg/nav_pkg.egg-info/SOURCES.txt'
+[4.217s] writing manifest file '../../build/nav_pkg/nav_pkg.egg-info/SOURCES.txt'
+[4.217s] running build
+[4.217s] running build_py
+[4.218s] copying nav_pkg/basic_navigation.py -> /home/trana41/irobot_ws/build/nav_pkg/build/lib/nav_pkg
+[4.218s] running install
+[4.219s] running install_lib
+[4.219s] copying /home/trana41/irobot_ws/build/nav_pkg/build/lib/nav_pkg/basic_navigation.py -> /home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages/nav_pkg
+[4.220s] byte-compiling /home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages/nav_pkg/basic_navigation.py to basic_navigation.cpython-310.pyc
+[4.220s] running install_data
+[4.220s] running install_egg_info
+[4.220s] removing '/home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages/nav_pkg-0.0.0-py3.10.egg-info' (and everything under it)
+[4.233s] Copying ../../build/nav_pkg/nav_pkg.egg-info to /home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages/nav_pkg-0.0.0-py3.10.egg-info
+[4.254s] running install_scripts
+[4.316s] Installing basic_navigation script to /home/trana41/irobot_ws/install/nav_pkg/lib/nav_pkg
+[4.318s] writing list of installed files to '/home/trana41/irobot_ws/build/nav_pkg/install.log'
+[4.369s] Invoked command in '/home/trana41/irobot_ws/src/nav_pkg' returned '0': PYTHONPATH=/home/trana41/irobot_ws/build/nav_pkg/prefix_override:/home/trana41/irobot_ws/install/nav_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/nav_pkg build --build-base /home/trana41/irobot_ws/build/nav_pkg/build install --record /home/trana41/irobot_ws/build/nav_pkg/install.log --single-version-externally-managed
