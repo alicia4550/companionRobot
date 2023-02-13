@@ -57,37 +57,12 @@ class GetOdomNode(Node):
     def position_callback(self, msg):
         self.position_ = msg.pose.pose.position
         self.orientation_ = msg.pose.pose.orientation
+        x, y, z = euler_from_quaternion(self.orientation_)
         self.get_logger().info("Current angle: x={0:.2f}, y={1:.2f}, z={2:.2f}".format(self.orientation_.x, self.orientation_.y, self.orientation_.z))
         self.get_logger().info("Current position: x={0:.2f}, y={1:.2f}".format(self.position_.x, self.position_.y))
 
-class ResetPose(Node):
-    def __init__(self):
-        super().__init__("reset_pose_node")
-        self.publisher_initial_pose = self.create_publisher(
-            PoseStamped,
-            '/initialpose',
-            10
-        )
-        self.reset_pose()
-
-        timer_period = 0.01
-        self.timer = self.create_timer(timer_period, self.reset_pose)
-
-    def reset_pose(self):
-        pose = PoseStamped()
-        pose.header.frame_id = "map"
-        pose.pose.position.x = 0.0
-        pose.pose.position.y = 0.0
-        pose.pose.position.z = 0.0
-        pose.pose.orientation.x = 0.0
-        pose.pose.orientation.y = 0.0
-        pose.pose.orientation.z = 0.0
-        pose.pose.orientation.w = 1.0
-        self.publisher_initial_pose.publish(pose)
-
 def get_delta_angle(x, y, get_odom_node):
     # Calculate angle of vector pointing to destination - relative to 0 degrees
-    print("Current angle: x={0:.2f}, y={1:.2f}, z={2:.2f}".format(get_odom_node.orientation_.x, get_odom_node.orientation_.y, get_odom_node.orientation_.z))
     delta_x = x - get_odom_node.position_.x
     delta_y = y - get_odom_node.position_.y
 
@@ -107,17 +82,41 @@ def get_delta_angle(x, y, get_odom_node):
         new_angle = 2*math.pi - new_angle
 
     # Get difference between destination angle and current heading of robot
-    delta_angle = get_odom_node.orientation_.z - new_angle
+    x, y, z = euler_from_quaternion(get_odom_node.orientation_)
+    current_angle = z
+    delta_angle = new_angle - current_angle
 
-    print("Goal angle: " + str(new_angle))
-    print("Delta angle: " + str(delta_angle))
+    # print("Current angle: " + str(current_angle))
+    # print("Goal angle: " + str(new_angle))
+    # print("Delta angle: " + str(delta_angle))
 
     return delta_angle
+
+def euler_from_quaternion(q):
+    x = q.x
+    y = q.y
+    z = q.z
+    w = q.w
+
+    t0 = 2.0 * (w * x + y * z)
+    t1 = 1.0 - 2.0 * (x * x + y * y)
+    roll_x = math.atan2(t0, t1)
+     
+    t2 = 2.0 * (w * y - z * x)
+    t2 = 1.0 if t2 > 1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch_y = math.asin(t2)
+     
+    t3 = 2.0 * (w * z + x * y)
+    t4 = 1.0 - 2.0 * (y * y + z * z)
+    yaw_z = math.atan2(t3, t4)
+ 
+    return roll_x, pitch_y, yaw_z
 
 def hasReachedDestination(x, y, get_odom_node):
     delta_x = x - get_odom_node.position_.x
     delta_y = y - get_odom_node.position_.y
-    return delta_x + delta_y < 0.5
+    return delta_x + delta_y < 0.25
 
 def rotate(angle):
     rotate_angle_node = RotateAngleNode()
@@ -127,22 +126,18 @@ def rotate(angle):
 
 def main(args=None):
     rclpy.init(args=args)
-    
-    reset_pose_node = ResetPose()
-    rclpy.spin_once(reset_pose_node)
 
     get_odom_node = GetOdomNode()
     rclpy.spin_once(get_odom_node)
-    delta_angle = get_delta_angle(0.5,0.5,get_odom_node)
-    rotate(delta_angle)
-    rclpy.spin_once(get_odom_node)
-    print("Current angle: x={0:.2f}, y={1:.2f}, z={2:.2f}".format(get_odom_node.orientation_.x, get_odom_node.orientation_.y, get_odom_node.orientation_.z))
 
-    set_speed_node = SetSpeedNode(2.0)
+    delta_angle = get_delta_angle(-1.9, -0.5,get_odom_node)
+    rotate(delta_angle)
+
+    set_speed_node = SetSpeedNode(1.0)
 
     while True:
         rclpy.spin_once(get_odom_node)
-        if hasReachedDestination(0.5, 0.5, get_odom_node):
+        if hasReachedDestination(-1.9, -0.5, get_odom_node):
             print("hasReachedDestination")
             break
         rclpy.spin_once(set_speed_node)
