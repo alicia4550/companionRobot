@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
 import rclpy
-from rclpy.action import ActionServer, ActionClient
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, Vector3, Quaternion, Point, PoseStamped
-from irobot_create_msgs.action import RotateAngle, WallFollow, DriveDistance
-import math
-from tf2_msgs.msg import TFMessage
-from nav_msgs.msg import Odometry
-from irobot_create_msgs.msg import IrIntensityVector, IrIntensity
-from rclpy.qos import qos_profile_sensor_data
 
-from nodes.drive_distance_node import DriveDistanceNode
-from nodes.get_odom_node import GetOdomNode
+import math
+
+from .drive_distance_node import DriveDistanceNode
+from .get_ir_node import GetIrNode
+from .get_odom_node import GetOdomNode
+from .rotate_angle_node import RotateAngleNode
+from .set_speed_node import SetSpeedNode
 
 
 def get_delta_angle(x, y, get_odom_node):
@@ -36,36 +33,11 @@ def get_delta_angle(x, y, get_odom_node):
         new_angle = 2*math.pi - new_angle
 
     # Get difference between destination angle and current heading of robot
-    x, y, z = euler_from_quaternion(get_odom_node.orientation_)
+    x, y, z = get_odom_node.euler_from_quaternion()
     current_angle = z
     delta_angle = new_angle - current_angle
 
-    # print("Current angle: " + str(current_angle))
-    # print("Goal angle: " + str(new_angle))
-    # print("Delta angle: " + str(delta_angle))
-
     return delta_angle
-
-def euler_from_quaternion(q):
-    x = q.x
-    y = q.y
-    z = q.z
-    w = q.w
-
-    t0 = 2.0 * (w * x + y * z)
-    t1 = 1.0 - 2.0 * (x * x + y * y)
-    roll_x = math.atan2(t0, t1)
-     
-    t2 = 2.0 * (w * y - z * x)
-    t2 = 1.0 if t2 > 1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = math.asin(t2)
-     
-    t3 = 2.0 * (w * z + x * y)
-    t4 = 1.0 - 2.0 * (y * y + z * z)
-    yaw_z = math.atan2(t3, t4)
- 
-    return roll_x, pitch_y, yaw_z
 
 def hasReachedDestination(x, y, get_odom_node):
     delta_x = x - get_odom_node.position_.x
@@ -104,7 +76,7 @@ def obstacle(sensors):
 def main(args=None):
     rclpy.init(args=args)
 
-    get_odom_node = nodes.GetOdomNode()
+    get_odom_node = GetOdomNode()
     rclpy.spin_once(get_odom_node)
 
     x = 0.0
