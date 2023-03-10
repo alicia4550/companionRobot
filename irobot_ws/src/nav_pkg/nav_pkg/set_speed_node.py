@@ -23,3 +23,9 @@ class SetSpeedNode(Node):
         velocity.linear.x = self.speed_
         velocity.angular.z = 0.0
         self.publisher_cmd_vel.publish(velocity)
+    
+    def stop(self):
+        velocity = Twist()
+        velocity.linear.x = 0.0
+        velocity.angular.z = 0.0
+        self.publisher_cmd_vel.publish(velocity)

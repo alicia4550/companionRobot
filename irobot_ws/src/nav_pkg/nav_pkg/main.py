@@ -2,17 +2,21 @@
 
 import rclpy
 from rclpy.node import Node
+from nav_msgs.msg import Odometry
+# import rospy
 
 import math
+import time
 
 from .drive_distance_node import DriveDistanceNode
 from .get_ir_node import GetIrNode
 from .get_odom_node import GetOdomNode
 from .rotate_angle_node import RotateAngleNode
+from .rotate_node import RotateNode
 from .set_speed_node import SetSpeedNode
 
 
-def get_delta_angle(x, y, get_odom_node):
+def getDeltaAngle(x, y, get_odom_node):
     # Calculate angle of vector pointing to destination - relative to 0 degrees
     delta_x = x - get_odom_node.position_.x
     delta_y = y - get_odom_node.position_.y
@@ -40,8 +44,8 @@ def get_delta_angle(x, y, get_odom_node):
     return delta_angle
 
 def hasReachedDestination(x, y, get_odom_node):
-    delta_x = x - get_odom_node.position_.x
-    delta_y = y - get_odom_node.position_.y
+    delta_x = abs(x - get_odom_node.position_.x)
+    delta_y = abs(y - get_odom_node.position_.y)
     return delta_x + delta_y < 0.25
 
 def rotate(angle):
@@ -49,13 +53,14 @@ def rotate(angle):
     future = rotate_angle_node.send_goal(angle)
     rclpy.spin_until_future_complete(rotate_angle_node, future)
 
-def boundary_follow(set_speed_node, get_ir_node):
+def boundaryFollow(set_speed_node, get_ir_node):
     rotate_node = RotateNode(0.01)
+    # rotate_node = RotateNode(0.1)
     while True:
         rclpy.spin_once(rotate_node)
         rclpy.spin_once(get_ir_node)
-
-        if get_ir_node.intensity_[1] < 50 and get_ir_node.intensity_[0] > 100:
+        
+        if (get_ir_node.intensity_[1] < 50 and get_ir_node.intensity_[0] > 100):
             break
 
     while True:
@@ -64,10 +69,8 @@ def boundary_follow(set_speed_node, get_ir_node):
 
         if get_ir_node.intensity_[0] < 50:
             break
-
-    drive_distance_node = DriveDistanceNode()
-    future = drive_distance_node.send_goal()
-    rclpy.spin_until_future_complete(drive_distance_node, future)
+        if obstacle(get_ir_node.intensity_):
+            boundaryFollow(set_speed_node, get_ir_node)
 
 def obstacle(sensors):
     return not all(sensor_val < 250 for sensor_val in sensors)
@@ -79,10 +82,10 @@ def main(args=None):
     get_odom_node = GetOdomNode()
     rclpy.spin_once(get_odom_node)
 
-    x = 0.0
-    y = 1.0
+    x = 3.0
+    y = 0.0
 
-    delta_angle = get_delta_angle(x, y,get_odom_node)
+    delta_angle = getDeltaAngle(x, y,get_odom_node)
     rotate(delta_angle)
 
     set_speed_node = SetSpeedNode(1.0)
@@ -92,13 +95,19 @@ def main(args=None):
     while True:
         rclpy.spin_once(get_odom_node)
         if hasReachedDestination(x, y, get_odom_node):
-            print("hasReachedDestination")
+            rclpy.logging.get_logger("get_odom_node").info("hasReachedDestination")
             break
         
         rclpy.spin_once(get_ir_node)
         if obstacle(get_ir_node.intensity_):
-            boundary_follow(set_speed_node, get_ir_node)
-            delta_angle = get_delta_angle(x, y,get_odom_node)
+            boundaryFollow(set_speed_node, get_ir_node)
+
+            set_speed_node.set_speed()
+            time.sleep(0.5)
+            set_speed_node.stop()
+
+            rclpy.spin_once(get_odom_node)
+            delta_angle = getDeltaAngle(x, y,get_odom_node)
             rotate(delta_angle)
         rclpy.spin_once(set_speed_node)
 

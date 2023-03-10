@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "basic_navigation = nav_pkg.main:main"
+            # "basic_navigation = nav_pkg.main:main"
+            "basic_navigation = nav_pkg.follow_node:main"
         ],
     },
 )

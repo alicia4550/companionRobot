@@ -16,4 +16,3 @@ class GetIrNode(Node):
         readings = msg.readings
         for i in range(len(readings)):
             self.intensity_[i] = readings[i].value
-        print(self.intensity_)

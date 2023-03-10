@@ -3,7 +3,6 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Quaternion, Point
-from tf2_msgs.msg import TFMessage
 from nav_msgs.msg import Odometry
 from rclpy.qos import qos_profile_sensor_data
 import math
@@ -11,14 +10,13 @@ import math
 class GetOdomNode(Node):
     def __init__(self):
         super().__init__('get_odom_node')
-        self.subscription = self.create_subscription(Odometry, 'odom', self.position_callback, qos_profile_sensor_data)
+        self.subscription = self.create_subscription(Odometry, '/odom', self.position_callback, qos_profile_sensor_data)
         self.position_ = Point()
         self.orientation_ = Quaternion()
 
     def position_callback(self, msg):
         self.position_ = msg.pose.pose.position
         self.orientation_ = msg.pose.pose.orientation
-        x, y, z = self.euler_from_quaternion()
         self.get_logger().info("Current angle: x={0:.2f}, y={1:.2f}, z={2:.2f}".format(self.orientation_.x, self.orientation_.y, self.orientation_.z))
         self.get_logger().info("Current position: x={0:.2f}, y={1:.2f}".format(self.position_.x, self.position_.y))
 
