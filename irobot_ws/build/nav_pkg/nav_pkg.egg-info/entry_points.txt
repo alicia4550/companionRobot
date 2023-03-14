@@ -1,3 +1,0 @@
-[console_scripts]
-basic_navigation = nav_pkg.main:main
-
