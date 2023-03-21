@@ -17,23 +17,10 @@ class UndockNode(Node):
     def __init__(self):
         super().__init__('undock_node') #node name
 
-        print('Creating subscription to to the DockStatus type over the /dock_status topic')
-        # subscribes to type DockStatus over /dock_status topic
-        self.subscription = self.create_subscription(DockStatus, '/dock_status', self.listener_callback, qos_profile_sensor_data)
-
         print('Initiating a new Undock action server...')
          # initialize a action server and include Undock as type of action and action name /undock
         self._action_client_undock = ActionClient(self, Undock, '/undock')
     
-    # The subscriber's callback listens and as soon as it receives the message, this function runs. 
-    # This callback function is basically printing what it hears.
-    def listener_callback(self, msg:DockStatus):
-        dock_status = msg.is_docked
-        if (dock_status): # if the robot is docked
-            print("Robot is docked.")
-            self.send_goal() # undock action
-        else:
-            print("Robot is already undocked.") # if the robot is undocked, do nothing.        
 
     def send_goal(self):
         goal_msg = Undock.Goal()
@@ -43,7 +30,6 @@ class UndockNode(Node):
         self._action_client_undock.wait_for_server()
 
         return self._action_client_undock.send_goal_async(goal_msg)
-
 
 
 
@@ -61,7 +47,7 @@ def main(args=None):
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        print("Undocked.")
+        print("The robot is undocked.")
         undock_node.destroy_node()
         rclpy.try_shutdown()
 

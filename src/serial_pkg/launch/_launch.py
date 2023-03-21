@@ -8,5 +8,5 @@ def generate_launch_description():
             package='serial_pkg',
             executable='serial',
             name='serial',
-             output= 'screen')
+            output= 'screen')
   ])
