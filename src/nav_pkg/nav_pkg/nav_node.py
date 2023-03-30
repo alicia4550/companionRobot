@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion
 from irobot_create_msgs.msg import IrIntensityVector
 from irobot_create_msgs.action import NavigateToPosition, WallFollow, DriveDistance
 from builtin_interfaces.msg import Duration
@@ -29,6 +29,8 @@ class NavNode(Node):
         self._action_client_drive_distance = ActionClient(self, DriveDistance, '/drive_distance')
 
         self.intensity = [0] * 7
+        self.position = Pose()
+        self.orientation = Quaternion()
 
         self.x = float(x)
         self.y = float(y)
@@ -39,25 +41,29 @@ class NavNode(Node):
         self.goal_handle_wall_follow = None
         self.goal_handle_drive_distance = None
 
+        self.orientation_of_wall_follow = None
+        self.cancelled_wall_follow = False
+
         self.send_goal_navigate_to_position()
     
     def listener_callback_ir(self, msg):
         readings = msg.readings
         for i in range(len(readings)):
             self.intensity[i] = readings[i].value
-        
+        self.get_logger().info(str(self.intensity))
         self.lock.acquire()
         if not self.hasReachedDestination and self.obstacle(self.intensity):
             if self.goal_handle_wall_follow is not None:
-                if self.should_stop_wall_follow(self.intensity):    
+                if self.should_stop_wall_follow(self.intensity):
+                    self.get_logger().info("Stop wall follow")
                     self.cancel_goal_wall_follow()
-                    time.sleep(0.5)
+                    time.sleep(1)
                     self.send_goal_drive_distance()
                     time.sleep(5)
                     self.send_goal_navigate_to_position()
                     self.goal_handle_wall_follow = None
             else:
-                self.stop_speed()
+                self.get_logger().info("Start wall follow")
                 if self.goal_handle_navigate_to_position is not None:
                     self.cancel_goal_navigate_to_position()
                 self.send_goal_wall_follow()
@@ -68,16 +74,37 @@ class NavNode(Node):
         x = position.x
         y = position.y
 
+        self.position = position
+        self.orientation = msg.pose.pose.orientation.z
+        if self.orientation < 0:
+            self.orientation = self.orientation + 1
+
+        if self.goal_handle_wall_follow is not None and self.orientation_of_wall_follow is None:
+            self.orientation_of_wall_follow = self.orientation
+
+        self.get_logger().info(str(x) + ", " + str(y))
+
         if not self.hasReachedDestination and math.sqrt((self.x - position.x)**2 + (self.y - position.y)**2) < 0.1:
             if self.goal_handle_wall_follow is not None:
                 self.cancel_goal_wall_follow()
             self.hasReachedDestination = True
+            self.get_logger().info("Reached destination")
 
     def obstacle(self, sensors):
         return not all(sensor_val < 200 for sensor_val in sensors)
     
     def should_stop_wall_follow(self, sensors):
-        return all(sensor_val < 50 for sensor_val in sensors[:6]) and sensors[6] > 500
+        # Checks if robot has reached the end of a wall - ONLY WORKS IN SIMULATION
+        # return all(sensor_val < 50 for sensor_val in sensors[:6]) and sensors[6] > 500 
+
+        # Checks if robot has changed direction - DOES NOT WORK, NEED TO FIX
+        if self.orientation_of_wall_follow != None: 
+            self.get_logger().info(str(self.orientation_of_wall_follow) + ", " + str(self.orientation))
+            if (abs(self.orientation_of_wall_follow - self.orientation) > 0.8):
+                self.get_logger().info("Should stop wall follow")
+                self.orientation_of_wall_follow = None
+                return True
+        return False
 
     def send_goal_navigate_to_position(self):
         goal_msg = NavigateToPosition.Goal()
@@ -94,10 +121,13 @@ class NavNode(Node):
 
         goal_msg.goal_pose = poseStamped
 
+        self.get_logger().info("Waiting for server")
         self._action_client_navigate_to_position.wait_for_server()
 
         self.future_navigate_to_position = self._action_client_navigate_to_position.send_goal_async(goal_msg)
         self.future_navigate_to_position.add_done_callback(self.goal_response_callback_navigate_to_position)
+
+        self.get_logger().info("Sent nav goal")
 
     def goal_response_callback_navigate_to_position(self, future):
         self.goal_handle_navigate_to_position = future.result()
@@ -108,7 +138,7 @@ class NavNode(Node):
     def send_goal_wall_follow(self):
         goal_msg = WallFollow.Goal()
         goal_msg.follow_side = 1
-        goal_msg.max_runtime = Duration(sec = 60, nanosec = 0)
+        goal_msg.max_runtime = Duration(sec = 20, nanosec = 0)
 
         self._action_client_wall_follow.wait_for_server()
 
@@ -116,10 +146,15 @@ class NavNode(Node):
         self.future_wall_follow.add_done_callback(self.goal_response_callback_wall_follow)
 
     def goal_response_callback_wall_follow(self, future):
+        self.cancelled_wall_follow = False
         self.goal_handle_wall_follow = future.result()
     
     def cancel_goal_wall_follow(self):
-        self.goal_handle_wall_follow.cancel_goal_async()
+        self.future_cancel_wall_follow = self.goal_handle_wall_follow.cancel_goal_async()
+        self.future_cancel_wall_follow.add_done_callback(self.goal_response_callback_cancel_wall_follow)
+
+    def goal_response_callback_cancel_wall_follow(self, future):
+        self.cancelled_wall_follow = True
 
     def send_goal_drive_distance(self):
         goal_msg = DriveDistance.Goal()
@@ -137,7 +172,7 @@ class NavNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    nav_node = NavNode(-4, 0)
+    nav_node = NavNode(1,1)
 
     try:
         rclpy.spin(nav_node)
