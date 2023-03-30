@@ -23,7 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "roam = roam_pkg.main:main",
+            "roam = roam_pkg.roam_node:main",
             "undock = roam_pkg.undock_node:main"
         ],
     },

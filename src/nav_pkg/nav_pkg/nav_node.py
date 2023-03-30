@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from geometry_msgs.msg import PoseStamped, Pose, Twist
+from geometry_msgs.msg import PoseStamped, Pose
 from irobot_create_msgs.msg import IrIntensityVector
 from irobot_create_msgs.action import NavigateToPosition, WallFollow, DriveDistance
 from builtin_interfaces.msg import Duration
@@ -74,10 +74,10 @@ class NavNode(Node):
             self.hasReachedDestination = True
 
     def obstacle(self, sensors):
-        return not all(sensor_val < 50 for sensor_val in sensors)
+        return not all(sensor_val < 200 for sensor_val in sensors)
     
     def should_stop_wall_follow(self, sensors):
-        return all(sensor_val == 15 for sensor_val in sensors[:6]) and sensors[6] > 600
+        return all(sensor_val < 50 for sensor_val in sensors[:6]) and sensors[6] > 500
 
     def send_goal_navigate_to_position(self):
         goal_msg = NavigateToPosition.Goal()
