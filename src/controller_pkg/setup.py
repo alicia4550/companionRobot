@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             "controller = controller_pkg.main:main",
-            "undock = controller_pkg.undock_node:main"
+            "undock = controller_pkg.undock_node:main",
+            "dock = controller_pkg.dock_node:main"
         ],
     },
 )

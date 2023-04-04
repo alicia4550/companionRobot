@@ -13,4 +13,9 @@ def generate_launch_description():
             executable='undock',
             name='undock',
             output= 'screen'),
+        launch_ros.actions.Node(
+            package='controller_pkg',
+            executable='dock',
+            name='dock',
+            output= 'screen')
   ])
