@@ -8,14 +8,5 @@ def generate_launch_description():
             executable='controller',
             name='controller',
             output= 'screen'),
-        launch_ros.actions.Node(
-            package='controller_pkg',
-            executable='undock',
-            name='undock',
-            output= 'screen'),
-        launch_ros.actions.Node(
-            package='controller_pkg',
-            executable='dock',
-            name='dock',
-            output= 'screen')
+
   ])
