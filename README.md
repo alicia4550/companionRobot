@@ -1,5 +1,7 @@
 
 # companionRobot
+[Watch the demo video](https://youtu.be/IZR9QynR8TI)
+
 This project runs on the iRobot Create3, with code in Python using ROS2.
 
 ## Requirements
